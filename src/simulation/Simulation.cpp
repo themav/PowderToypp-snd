@@ -612,35 +612,33 @@ int Simulation::FloodINST(int x, int y, int fullc, int cm)
 }
 
 
-int Simulation::FloodParts(int x, int y, int fullc, int cm, int bm, int flags)
+int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 {
 	int c = fullc&0xFF;
-	int x1, x2, dy = (c<PT_NUM)?1:CELL;
-	int co = c;
+	int x1, x2;
 	int coord_stack_limit = XRES*YRES;
 	unsigned short (*coord_stack)[2];
 	int coord_stack_size = 0;
-	int created_something = 0;
+	int parts_created = 0;
+	bool use_photons = false;
 
-	if (c==SPC_PROP)
-		return 0;
 	if (cm==-1)
 	{
 		if (c==0)
 		{
 			cm = pmap[y][x]&0xFF;
 			if (!cm)
+				cm = photons[y][x]&0xFF;
+			if (!cm)
 				return 0;
 		}
 		else
 			cm = 0;
 	}
-	if (bm==-1)
-	{
-		bm = bmap[y/CELL][x/CELL];
-	}
+	if ((elements[c].Properties & TYPE_ENERGY) || (photons[y][x]&0xFF))
+		use_photons = true;
 
-	if (((pmap[y][x]&0xFF)!=cm || bmap[y/CELL][x/CELL]!=bm ))
+	if ((!use_photons && (pmap[y][x]&0xFF) != cm) || (use_photons && (photons[y][x]&0xFF) != cm))
 		return 1;
 
 	coord_stack = (short unsigned int (*)[2])malloc(sizeof(unsigned short)*2*coord_stack_limit);
@@ -655,18 +653,18 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int bm, int flags)
 		y = coord_stack[coord_stack_size][1];
 		x1 = x2 = x;
 		// go left as far as possible
-		while (x1>=CELL)
+		while (x1>=CELL || ((c == 0 || !OutOfBounds(x1-1, y)) && x1 > 0))
 		{
-			if ((pmap[y][x1-1]&0xFF)!=cm || bmap[y/CELL][(x1-1)/CELL]!=bm)
+			if ((!use_photons && (pmap[y][x1-1]&0xFF) != cm) || (use_photons && (photons[y][x1-1]&0xFF) != cm))
 			{
 				break;
 			}
 			x1--;
 		}
 		// go right as far as possible
-		while (x2<XRES-CELL)
+		while (x2<XRES-CELL || ((c == 0 || !OutOfBounds(x2+1, y)) && x2 < XRES-1))
 		{
-			if ((pmap[y][x2+1]&0xFF)!=cm || bmap[y/CELL][(x2+1)/CELL]!=bm)
+			if ((!use_photons && (pmap[y][x2+1]&0xFF) != cm) || (use_photons && (photons[y][x2+1]&0xFF) != cm))
 			{
 				break;
 			}
@@ -675,16 +673,17 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int bm, int flags)
 		// fill span
 		for (x=x1; x<=x2; x++)
 		{
-			if (CreateParts(x, y, 0, 0, fullc, flags))
-				created_something = 1;
+			if (CreateParts(x, y, 0, 0, fullc, flags) != -1)
+				parts_created++;
 		}
 
-		if (y>=CELL+dy)
+		// fill children
+		if (y>=CELL || ((c == 0 || !OutOfBounds(x, y-1) && y > 0)))
 			for (x=x1; x<=x2; x++)
-				if ((pmap[y-dy][x]&0xFF)==cm && bmap[(y-dy)/CELL][x/CELL]==bm)
+				if ((!use_photons && (pmap[y-1][x]&0xFF) == cm) || (use_photons && (photons[y-1][x]&0xFF) == cm))
 				{
 					coord_stack[coord_stack_size][0] = x;
-					coord_stack[coord_stack_size][1] = y-dy;
+					coord_stack[coord_stack_size][1] = y-1;
 					coord_stack_size++;
 					if (coord_stack_size>=coord_stack_limit)
 					{
@@ -693,12 +692,12 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int bm, int flags)
 					}
 				}
 
-		if (y<YRES-CELL-dy)
+		if (y<YRES-CELL-1 || ((c == 0 || !OutOfBounds(x, y+1) && y < YRES-1)))
 			for (x=x1; x<=x2; x++)
-				if ((pmap[y+dy][x]&0xFF)==cm && bmap[(y+dy)/CELL][x/CELL]==bm)
+				if ((!use_photons && (pmap[y+1][x]&0xFF) == cm) || (use_photons && (photons[y+1][x]&0xFF) == cm))
 				{
 					coord_stack[coord_stack_size][0] = x;
-					coord_stack[coord_stack_size][1] = y+dy;
+					coord_stack[coord_stack_size][1] = y+1;
 					coord_stack_size++;
 					if (coord_stack_size>=coord_stack_limit)
 					{
@@ -708,17 +707,12 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int bm, int flags)
 				}
 	} while (coord_stack_size>0);
 	free(coord_stack);
-	return created_something;
+	return parts_created;
 }
 
-int Simulation::FloodWalls(int x, int y, int c, int cm, int bm, int flags)
+int Simulation::FloodWalls(int x, int y, int c, int bm, int flags)
 {
 	int x1, x2, dy = CELL;
-	int co = c;
-	if (cm==-1)
-	{
-		cm = pmap[y][x]&0xFF;
-	}
 	if (bm==-1)
 	{
 		if (c==WL_ERASE)
@@ -731,14 +725,14 @@ int Simulation::FloodWalls(int x, int y, int c, int cm, int bm, int flags)
 			bm = 0;
 	}
 	
-	if (((pmap[y][x]&0xFF)!=cm || bmap[y/CELL][x/CELL]!=bm )/*||( (flags&BRUSH_SPECIFIC_DELETE) && cm!=SLALT)*/)
+	if ((bmap[y/CELL][x/CELL]!=bm )/*||( (flags&BRUSH_SPECIFIC_DELETE) && cm!=SLALT)*/)
 		return 1;
 	
 	// go left as far as possible
 	x1 = x2 = x;
 	while (x1>=CELL)
 	{
-		if ((pmap[y][x1-1]&0xFF)!=cm || bmap[y/CELL][(x1-1)/CELL]!=bm)
+		if (bmap[y/CELL][(x1-1)/CELL]!=bm)
 		{
 			break;
 		}
@@ -746,7 +740,7 @@ int Simulation::FloodWalls(int x, int y, int c, int cm, int bm, int flags)
 	}
 	while (x2<XRES-CELL)
 	{
-		if ((pmap[y][x2+1]&0xFF)!=cm || bmap[y/CELL][(x2+1)/CELL]!=bm)
+		if (bmap[y/CELL][(x2+1)/CELL]!=bm)
 		{
 			break;
 		}
@@ -762,13 +756,13 @@ int Simulation::FloodWalls(int x, int y, int c, int cm, int bm, int flags)
 	// fill children
 	if (y>=CELL+dy)
 		for (x=x1; x<=x2; x++)
-			if ((pmap[y-dy][x]&0xFF)==cm && bmap[(y-dy)/CELL][x/CELL]==bm)
-				if (!FloodWalls(x, y-dy, c, cm, bm, flags))
+			if (bmap[(y-dy)/CELL][x/CELL]==bm)
+				if (!FloodWalls(x, y-dy, c, bm, flags))
 					return 0;
 	if (y<YRES-CELL-dy)
 		for (x=x1; x<=x2; x++)
-			if ((pmap[y+dy][x]&0xFF)==cm && bmap[(y+dy)/CELL][x/CELL]==bm)
-				if (!FloodWalls(x, y+dy, c, cm, bm, flags))
+			if (bmap[(y+dy)/CELL][x/CELL]==bm)
+				if (!FloodWalls(x, y+dy, c, bm, flags))
 					return 0;
 	return 1;
 }
