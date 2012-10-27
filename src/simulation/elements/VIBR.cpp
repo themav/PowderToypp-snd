@@ -143,7 +143,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	if (parts[i].life == 1)
 	{
 		sim->create_part(i, x, y, PT_EXOT);
-		parts[i].tmp2 = 100;
+		parts[i].tmp2 = rand()%1000;
 		int random = rand(), index;
 		index = sim->create_part(-3,x+(random&3)-1,y+((random>>2)&3)-1,PT_ELEC);
 		if (index != -1)
