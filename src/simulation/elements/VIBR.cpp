@@ -85,25 +85,25 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	if (!parts[i].life)
 	{
 		//Heat absorption code
-		if (parts[i].temp>274.65f)
-		{
-			parts[i].ctype++;
-			parts[i].temp-=3;
-		}
-		if (parts[i].temp<271.65f)
-		{
-			parts[i].ctype--;
-			parts[i].temp+=3;
-		}
-		//Pressure absorption code
-		if (sim->pv[y/CELL][x/CELL]>2.5)
+		if (parts[i].temp > 274.65f)
 		{
 			parts[i].tmp++;
-			sim->pv[y/CELL][x/CELL]--;
+			parts[i].temp -= 3;
 		}
-		if (sim->pv[y/CELL][x/CELL]<-2.5)
+		if (parts[i].temp < 271.65f)
 		{
 			parts[i].tmp--;
+			parts[i].temp += 3;
+		}
+		//Pressure absorption code
+		if (sim->pv[y/CELL][x/CELL] > 2.5)
+		{
+			parts[i].tmp += 10;
+			sim->pv[y/CELL][x/CELL]--;
+		}
+		if (sim->pv[y/CELL][x/CELL] < -2.5)
+		{
+			parts[i].tmp -= 10;
 			sim->pv[y/CELL][x/CELL]++;
 		}
 	}
@@ -121,7 +121,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		}
 	}
 	//initiate explosion counter
-	if (!parts[i].life && (parts[i].ctype > 1200 || parts[i].tmp > 100 || parts[i].tmp2 > 100))
+	if (!parts[i].life && parts[i].tmp > 1000)
 		parts[i].life = 750;
 	//Release all heat
 	if (parts[i].life && parts[i].life < 500)
@@ -134,8 +134,8 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 			r = pmap[y+ry][x+rx];
 			if ((r&0xFF) && (r&0xFF)!=PT_VIBR)
 			{
-				parts[r>>8].temp += parts[i].ctype*6;
-				parts[i].ctype -= parts[i].ctype*2;
+				parts[r>>8].temp += parts[i].tmp*6;
+				parts[i].tmp -= parts[i].tmp*2;
 			}
 		}
 	}
@@ -145,9 +145,6 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		sim->create_part(i, x, y, PT_EXOT);
 		parts[i].tmp2 = rand()%1000;
 		int random = rand(), index;
-		index = sim->create_part(-3,x+(random&3)-1,y+((random>>2)&3)-1,PT_ELEC);
-		if (index != -1)
-			parts[index].temp = 7000;
 		index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_NEUT);
 		if (index != -1)
 			parts[index].temp = 7000;
@@ -176,7 +173,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				//Absorbs energy particles
 				if (sim->elements[r&0xFF].Properties & TYPE_ENERGY)
 				{
-					parts[i].tmp2++;
+					parts[i].tmp += 10;
 					sim->kill_part(r>>8);
 				}
 				if ((r&0xFF)==PT_BOYL)
@@ -185,17 +182,13 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				}
 			}
 	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));
-	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp2));
-	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, ctype));
 	return 0;
 }
 
 //#TPT-Directive ElementHeader Element_VIBR static int graphics(GRAPHICS_FUNC_ARGS)
 int Element_VIBR::graphics(GRAPHICS_FUNC_ARGS)
 {
-	float maxtemp = std::max((float)cpart->tmp, cpart->temp);
-	int gradient = std::max(cpart->ctype/12.0f, (float)cpart->tmp);
-	gradient = std::max(gradient, cpart->tmp2);
+	int gradient = cpart->tmp/10;
 	if (gradient >= 100 || cpart->life)
 	{
 		*pixel_mode = PMODE_NONE;
