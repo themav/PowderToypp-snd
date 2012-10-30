@@ -26,7 +26,7 @@ Element_VIBR::Element_VIBR()
 
 	Weight = 100;
 
-	Temperature = R_TEMP+0.0f	+273.15f;
+	Temperature = 273.15f;
 	HeatConduct = 251;
 	Description = "Vibranium. Stores energy and releases it in violent explosions.";
 
@@ -81,8 +81,16 @@ void transferProp(UPDATE_FUNC_ARGS, int propOffset)
 
 //#TPT-Directive ElementHeader Element_VIBR static int update(UPDATE_FUNC_ARGS)
 int Element_VIBR::update(UPDATE_FUNC_ARGS) {
-	int r, rx, ry, transfer, trade;
-	if (!parts[i].life)
+	int r, rx, ry;
+	if (parts[i].ctype == 1)
+	{
+		if (sim->pv[y/CELL][x/CELL] > -2.5)
+		{
+			parts[i].ctype = 0;
+			sim->part_change_type(i, x, y, PT_VIBR);
+		}
+	}
+	else if (!parts[i].life)
 	{
 		//Heat absorption code
 		if (parts[i].temp > 274.65f)
@@ -103,7 +111,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		}
 		if (sim->pv[y/CELL][x/CELL] < -2.5)
 		{
-			parts[i].tmp -= 10;
+			parts[i].tmp -= 2;
 			sim->pv[y/CELL][x/CELL]++;
 		}
 	}
@@ -168,10 +176,10 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				//Melts into EXOT
 				if ((r&0xFF)==PT_EXOT && !(rand()%250))
 				{
-					sim->part_change_type(i,x,y,PT_EXOT);
+					sim->create_part(i, x, y, PT_EXOT);
 				}
 				//Absorbs energy particles
-				if (sim->elements[r&0xFF].Properties & TYPE_ENERGY)
+				if ((sim->elements[r&0xFF].Properties & TYPE_ENERGY) && parts[i].ctype != 1)
 				{
 					parts[i].tmp += 10;
 					sim->kill_part(r>>8);
@@ -182,6 +190,11 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				}
 			}
 	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));
+	if (parts[i].tmp && parts[i].ctype == 1) //new BVBR doesn't absorb the negative pressure needed to create it until this
+	{
+		parts[i].ctype = 0;
+		sim->part_change_type(i, x, y, PT_VIBR);
+	}
 	return 0;
 }
 
