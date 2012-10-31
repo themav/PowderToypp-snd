@@ -4,7 +4,7 @@ Element_VIBR::Element_VIBR()
 {
 	Identifier = "DEFAULT_PT_VIBR";
 	Name = "VIBR";
-	Colour = PIXPACK(0x002900);
+	Colour = PIXPACK(0x005000);
 	MenuVisible = 1;
 	MenuSection = SC_SOLIDS;
 	Enabled = 1;
@@ -204,33 +204,26 @@ int Element_VIBR::graphics(GRAPHICS_FUNC_ARGS)
 	int gradient = cpart->tmp/10;
 	if (gradient >= 100 || cpart->life)
 	{
-		*pixel_mode = PMODE_NONE;
-		*pixel_mode |= FIRE_BLEND;
+		*colr = abs(sin(exp((750.0f-cpart->life)/170)))*200;
+		*colg = 255;
+		*colb = abs(sin(exp((750.0f-cpart->life)/170)))*200;
 		*firea = 90;
-		*colr = 146;
-		*colg = 158;
-		*colb = 113;
 		*firer = *colr;
 		*fireg = *colg;
 		*fireb = *colb;
+		*pixel_mode = PMODE_NONE;
+		*pixel_mode |= FIRE_BLEND;
 	}
-	else if (gradient >= 94 && gradient < 100)
+	else if (gradient < 100)
 	{
-		*colr += (int)restrict_flt((gradient-94)*19.7+100,100,218);
-		*colg += (int)restrict_flt((gradient-94)*17.5+87,87,192);
-		*colb += (int)restrict_flt((gradient-94)*19.7+100,100,218);
-	}
-	else if (gradient >= 63 && gradient < 94)
-	{
-		*colr += (int)restrict_flt((gradient-63)*1.58+51,51,100);
-		*colg += (int)restrict_flt((gradient-63)*1.03+55,55,87);
-		*colb += (int)restrict_flt((gradient-63)*1.58+51,51,100);
-	}
-	else if (gradient > 31 && gradient < 63)
-	{
-		*colr += (int)restrict_flt((gradient-31)*1.59,0,51);
-		*colg += (int)restrict_flt((gradient-31)*1.72,0,55);
-		*colb += (int)restrict_flt((gradient-31)*1.59,0,51);
+		*colr += (int)restrict_flt(gradient*2.0f,0,255);
+		*colg += (int)restrict_flt(gradient*2.0f,0,175);
+		*colb += (int)restrict_flt(gradient*2.0f,0,255);
+		*firea = (int)restrict_flt(gradient*.6f,0,60);
+		*firer = *colr/2;
+		*fireg = *colg/2;
+		*fireb = *colb/2;
+		*pixel_mode |= FIRE_BLEND;
 	}
 	return 0;
 }

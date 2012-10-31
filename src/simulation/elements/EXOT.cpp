@@ -179,7 +179,7 @@ int Element_EXOT::graphics(GRAPHICS_FUNC_ARGS)
 	}
 	else
 	{
-		float frequency = 0.01300; 
+		float frequency = 0.01300;
 		*colr = (sin(frequency*q + 6.00) * 127 + ((b/2.9) + 80));
 		*colg = (sin(frequency*q + 6.00) * 127 + ((b/2.9) + 80));
 		*colb = (sin(frequency*q + 6.00) * 127 + ((b/2.9) + 80));

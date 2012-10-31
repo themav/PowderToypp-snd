@@ -4,7 +4,7 @@ Element_BVBR::Element_BVBR()
 {
     Identifier = "DEFAULT_PT_BVBR";
     Name = "BVBR";
-    Colour = PIXPACK(0x002900);
+    Colour = PIXPACK(0x005000);
     MenuVisible = 1;
     MenuSection = SC_POWDERS;
     Enabled = 1;
