@@ -84,7 +84,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	int r, rx, ry;
 	if (parts[i].ctype == 1)
 	{
-		if (sim->pv[y/CELL][x/CELL] > -2.5)
+		if (sim->pv[y/CELL][x/CELL] > -2.5 || parts[i].tmp) //newly created BVBR turns to VIBR
 		{
 			parts[i].ctype = 0;
 			sim->part_change_type(i, x, y, PT_VIBR);
@@ -153,7 +153,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		sim->create_part(i, x, y, PT_EXOT);
 		parts[i].tmp2 = rand()%1000;
 		int random = rand(), index;
-		index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_NEUT);
+		index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_ELEC);
 		if (index != -1)
 			parts[index].temp = 7000;
 		index = sim->create_part(-3,x+((random>>8)&3)-1,y+((random>>10)&3)-1,PT_PHOT);
@@ -179,7 +179,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 					sim->create_part(i, x, y, PT_EXOT);
 				}
 				//Absorbs energy particles
-				if ((sim->elements[r&0xFF].Properties & TYPE_ENERGY) && parts[i].ctype != 1)
+				if ((sim->elements[r&0xFF].Properties & TYPE_ENERGY))
 				{
 					parts[i].tmp += 10;
 					sim->kill_part(r>>8);
@@ -190,11 +190,6 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				}
 			}
 	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));
-	if (parts[i].tmp && parts[i].ctype == 1) //new BVBR doesn't absorb the negative pressure needed to create it until this
-	{
-		parts[i].ctype = 0;
-		sim->part_change_type(i, x, y, PT_VIBR);
-	}
 	return 0;
 }
 
