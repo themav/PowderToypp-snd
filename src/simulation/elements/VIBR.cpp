@@ -159,34 +159,40 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		index = sim->create_part(-3,x+((random>>8)&3)-1,y+((random>>10)&3)-1,PT_PHOT);
 		if (index != -1)
 			parts[index].temp = 7000;
-		index = sim->create_part(-3,x+((random>>12)&3)-1,y+rand()%3-1,PT_BREC);
+		index = sim->create_part(-1,x+((random>>12)&3)-1,y+rand()%3-1,PT_BREC);
 		if (index != -1)
 			parts[index].temp = 7000;
 		parts[i].temp=9000;
 		sim->pv[y/CELL][x/CELL]=200;
 	}
 	//Neighbor check loop
-	for (rx=-2; rx<3; rx++)
-		for (ry=-2; ry<3; ry++)
+	for (rx=-3; rx<4; rx++)
+		for (ry=-3; ry<4; ry++)
 			if (x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES && (rx || ry))
 			{
 				r = pmap[y+ry][x+rx];
+				if (!r || (r & (abs(rx) == 3 || abs(ry) == 3)) )
+					r = sim->photons[y+ry][x+rx];
 				if (!r)
 					continue;
 				//Melts into EXOT
-				if ((r&0xFF)==PT_EXOT && !(rand()%250))
+				if ((r&0xFF) == PT_EXOT && !(rand()%250))
 				{
 					sim->create_part(i, x, y, PT_EXOT);
+				}
+				else if ((r&0xFF) == PT_BOYL)
+				{
+					sim->part_change_type(i,x,y,PT_BVBR);
+				}
+				else if (parts[i].life && (r&0xFF) == PT_VIBR && !parts[r>>8].life)
+				{
+					parts[r>>8].tmp += 10;
 				}
 				//Absorbs energy particles
 				if ((sim->elements[r&0xFF].Properties & TYPE_ENERGY))
 				{
 					parts[i].tmp += 10;
 					sim->kill_part(r>>8);
-				}
-				if ((r&0xFF)==PT_BOYL)
-				{
-					sim->part_change_type(i,x,y,PT_BVBR);
 				}
 			}
 	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));

@@ -26,6 +26,7 @@ def SetupSpawn( env ):
 
 AddOption('--opengl',dest="opengl",action='store_true',default=False,help="Build with OpenGL interface support.")
 AddOption('--opengl-renderer',dest="opengl-renderer",action='store_true',default=False,help="Build with OpenGL renderer support. (requires --opengl)")
+AddOption('--renderer',dest="renderer",action='store_true',default=False,help="Save renderer")
 AddOption('--win',dest="win",action='store_true',default=False,help="Windows platform target.")
 AddOption('--lin',dest="lin",action='store_true',default=False,help="Linux platform target")
 AddOption('--macosx',dest="macosx",action='store_true',default=False,help="Mac OS X platform target")
@@ -125,13 +126,18 @@ else:
 env.Append(CPPPATH=['src/', 'data/', 'generated/'])
 env.Append(CCFLAGS=['-w', '-std=c++98', '-fkeep-inline-functions'])
 env.Append(LIBS=['pthread', 'm'])
-env.Append(CPPDEFINES=["USE_SDL", "LUACONSOLE", "GRAVFFT", "_GNU_SOURCE", "USE_STDINT", "_POSIX_C_SOURCE=200112L"])
+env.Append(CPPDEFINES=["LUACONSOLE", "GRAVFFT", "_GNU_SOURCE", "USE_STDINT", "_POSIX_C_SOURCE=200112L"])
 
 if GetOption("ptw32-static"):
 	env.Append(CPPDEFINES=['PTW32_STATIC_LIB']);
 
 if(GetOption('static')):
 	env.Append(LINKFLAGS=['-static-libgcc'])
+
+if(GetOption('renderer')):
+	env.Append(CPPDEFINES=['RENDERER'])
+else:
+	env.Append(CPPDEFINES=["USE_SDL"])
 
 if(GetOption('win')):
 	openGLLibs = ['opengl32', 'glew32']
@@ -247,8 +253,14 @@ SetupSpawn(env)
 
 programName = "powder"
 
+if(GetOption('renderer')):
+	programName = "render"
+
 if(GetOption('win')):
-	programName = "Powder"
+	if(GetOption('renderer')):
+		programName = "Render"
+	else:
+		programName = "Powder"
 
 if(GetOption('_64bit')):
 	programName += "64"
