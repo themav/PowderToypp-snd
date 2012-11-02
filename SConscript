@@ -285,10 +285,10 @@ if(GetOption('win')):
 	envCopy.Append(CCFLAGS=['-mincoming-stack-boundary=2'])
 	sources+=envCopy.Object('src/simulation/Gravity.cpp')
 
-env.Command(['generated/ElementClasses.cpp', 'generated/ElementClasses.h'], Glob('src/simulation/elements/*.cpp'), "python2 generator.py elements $TARGETS $SOURCES")
+env.Command(['generated/ElementClasses.cpp', 'generated/ElementClasses.h'], Glob('src/simulation/elements/*.cpp'), "python generator.py elements $TARGETS $SOURCES")
 sources+=Glob("generated/ElementClasses.cpp")
 
-env.Command(['generated/ToolClasses.cpp', 'generated/ToolClasses.h'], Glob('src/simulation/tools/*.cpp'), "python2 generator.py tools $TARGETS $SOURCES")
+env.Command(['generated/ToolClasses.cpp', 'generated/ToolClasses.h'], Glob('src/simulation/tools/*.cpp'), "python generator.py tools $TARGETS $SOURCES")
 sources+=Glob("generated/ToolClasses.cpp")
 
 env.Decider('MD5')
