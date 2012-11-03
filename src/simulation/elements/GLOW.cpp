@@ -63,7 +63,7 @@ int Element_GLOW::update(UPDATE_FUNC_ARGS)
 					sim->part_change_type(r>>8,x+rx,y+ry,PT_DEUT);
 					parts[r>>8].life = 10;
 				}
-				if (((r&0xFF)==PT_TTAN || ((r&0xFF)==PT_LAVA && parts[r>>8].ctype == PT_TTAN)) && sim->pv[y/CELL][x/CELL] < -200)
+				else if (((r&0xFF)==PT_TTAN || ((r&0xFF)==PT_LAVA && parts[r>>8].ctype == PT_TTAN)) && sim->pv[y/CELL][x/CELL] < -200)
 				{
 					if (rand()%5)
 						sim->kill_part(r>>8);

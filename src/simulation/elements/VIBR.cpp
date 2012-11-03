@@ -57,7 +57,7 @@ void transferProp(UPDATE_FUNC_ARGS, int propOffset)
 		if (x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES && (rx || ry))
 		{
 			r = pmap[y+ry][x+rx];
-			if ((r&0xFF)!=PT_VIBR)
+			if ((r&0xFF) != parts[i].type)
 				continue;
 			if (*((int*)(((char*)&parts[i])+propOffset)) > *((int*)(((char*)&parts[r>>8])+propOffset)))
 			{
@@ -140,7 +140,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		if(x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES)
 		{
 			r = pmap[y+ry][x+rx];
-			if ((r&0xFF) && (r&0xFF)!=PT_VIBR)
+			if ((r&0xFF) && (r&0xFF) != parts[i].type)
 			{
 				parts[r>>8].temp += parts[i].tmp*6;
 				parts[i].tmp -= parts[i].tmp*2;
@@ -150,9 +150,9 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	//Explosion code
 	if (parts[i].life == 1)
 	{
+		int random = rand(), index;
 		sim->create_part(i, x, y, PT_EXOT);
 		parts[i].tmp2 = rand()%1000;
-		int random = rand(), index;
 		index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_ELEC);
 		if (index != -1)
 			parts[index].temp = 7000;
@@ -184,7 +184,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				{
 					sim->part_change_type(i,x,y,PT_BVBR);
 				}
-				else if (parts[i].life && (r&0xFF) == PT_VIBR && !parts[r>>8].life)
+				else if (parts[i].life && (r&0xFF) == parts[i].type && !parts[r>>8].life)
 				{
 					parts[r>>8].tmp += 10;
 				}
@@ -205,9 +205,9 @@ int Element_VIBR::graphics(GRAPHICS_FUNC_ARGS)
 	int gradient = cpart->tmp/10;
 	if (gradient >= 100 || cpart->life)
 	{
-		*colr = abs(sin(exp((750.0f-cpart->life)/170)))*200;
+		*colr = (int)(fabs(sin(exp((750.0f-cpart->life)/170)))*200.0f);
 		*colg = 255;
-		*colb = abs(sin(exp((750.0f-cpart->life)/170)))*200;
+		*colb = (int)(fabs(sin(exp((750.0f-cpart->life)/170)))*200.0f);
 		*firea = 90;
 		*firer = *colr;
 		*fireg = *colg;
