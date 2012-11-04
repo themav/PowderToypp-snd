@@ -82,7 +82,7 @@ void transferProp(UPDATE_FUNC_ARGS, int propOffset)
 //#TPT-Directive ElementHeader Element_VIBR static int update(UPDATE_FUNC_ARGS)
 int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	int r, rx, ry;
-	if (parts[i].ctype == 1) //newly created BVBR
+	if (parts[i].ctype == 1) //leaving in, just because
 	{
 		if (sim->pv[y/CELL][x/CELL] > -2.5 || parts[i].tmp)
 		{
