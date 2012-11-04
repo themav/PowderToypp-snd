@@ -6,7 +6,7 @@ Element_VIBR::Element_VIBR()
 	Name = "VIBR";
 	Colour = PIXPACK(0x005000);
 	MenuVisible = 1;
-	MenuSection = SC_SOLIDS;
+	MenuSection = SC_NUCLEAR;
 	Enabled = 1;
 
 	Advection = 0.0f;
@@ -82,15 +82,15 @@ void transferProp(UPDATE_FUNC_ARGS, int propOffset)
 //#TPT-Directive ElementHeader Element_VIBR static int update(UPDATE_FUNC_ARGS)
 int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	int r, rx, ry;
-	if (parts[i].ctype == 1)
+	if (parts[i].ctype == 1) //newly created BVBR
 	{
-		if (sim->pv[y/CELL][x/CELL] > -2.5 || parts[i].tmp) //newly created BVBR turns to VIBR
+		if (sim->pv[y/CELL][x/CELL] > -2.5 || parts[i].tmp)
 		{
 			parts[i].ctype = 0;
 			sim->part_change_type(i, x, y, PT_VIBR);
 		}
 	}
-	else if (!parts[i].life)
+	else if (!parts[i].life) //if not exploding
 	{
 		//Heat absorption code
 		if (parts[i].temp > 274.65f)
@@ -106,7 +106,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 		//Pressure absorption code
 		if (sim->pv[y/CELL][x/CELL] > 2.5)
 		{
-			parts[i].tmp += 10;
+			parts[i].tmp += 7;
 			sim->pv[y/CELL][x/CELL]--;
 		}
 		if (sim->pv[y/CELL][x/CELL] < -2.5)
@@ -114,64 +114,67 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 			parts[i].tmp -= 2;
 			sim->pv[y/CELL][x/CELL]++;
 		}
+		//initiate explosion counter
+		if (parts[i].tmp > 1000)
+			parts[i].life = 750;
 	}
-	//Release sparks before explode
-	if (parts[i].life && parts[i].life < 300)
+	else //if it is exploding
 	{
-		rx = rand()%3-1;
-		ry = rand()%3-1;
-		r = pmap[y+ry][x+rx];
-		if ((r&0xFF) && (r&0xFF) != PT_BREC && (sim->elements[r&0xFF].Properties&PROP_CONDUCTS) && !parts[r>>8].life)
+		//Release sparks before explode
+		if (parts[i].life < 300)
 		{
-			parts[r>>8].life = 4;
-			parts[r>>8].ctype = r>>8;
-			sim->part_change_type(r>>8,x+rx,y+ry,PT_SPRK);
-		}
-	}
-	//initiate explosion counter
-	if (!parts[i].life && parts[i].tmp > 1000)
-		parts[i].life = 750;
-	//Release all heat
-	if (parts[i].life && parts[i].life < 500)
-	{
-		int random = rand();
-		rx = random%7-3;
-		ry = (random>>3)%7-3;
-		if(x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES)
-		{
+			rx = rand()%3-1;
+			ry = rand()%3-1;
 			r = pmap[y+ry][x+rx];
-			if ((r&0xFF) && (r&0xFF) != parts[i].type)
+			if ((r&0xFF) && (r&0xFF) != PT_BREC && (sim->elements[r&0xFF].Properties&PROP_CONDUCTS) && !parts[r>>8].life)
 			{
-				parts[r>>8].temp += parts[i].tmp*6;
-				parts[i].tmp -= parts[i].tmp*2;
+				parts[r>>8].life = 4;
+				parts[r>>8].ctype = r>>8;
+				sim->part_change_type(r>>8,x+rx,y+ry,PT_SPRK);
 			}
 		}
-	}
-	//Explosion code
-	if (parts[i].life == 1)
-	{
-		int random = rand(), index;
-		sim->create_part(i, x, y, PT_EXOT);
-		parts[i].tmp2 = rand()%1000;
-		index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_ELEC);
-		if (index != -1)
-			parts[index].temp = 7000;
-		index = sim->create_part(-3,x+((random>>8)&3)-1,y+((random>>10)&3)-1,PT_PHOT);
-		if (index != -1)
-			parts[index].temp = 7000;
-		index = sim->create_part(-1,x+((random>>12)&3)-1,y+rand()%3-1,PT_BREC);
-		if (index != -1)
-			parts[index].temp = 7000;
-		parts[i].temp=9000;
-		sim->pv[y/CELL][x/CELL]=200;
+		//Release all heat
+		if (parts[i].life < 500)
+		{
+			int random = rand();
+			rx = random%7-3;
+			ry = (random>>3)%7-3;
+			if(x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES)
+			{
+				r = pmap[y+ry][x+rx];
+				if ((r&0xFF) && (r&0xFF) != parts[i].type)
+				{
+					parts[r>>8].temp += parts[i].tmp*6;
+					parts[i].tmp -= parts[i].tmp*2;
+				}
+			}
+		}
+		//Explosion code
+		if (parts[i].life == 1)
+		{
+			int random = rand(), index;
+			sim->create_part(i, x, y, PT_EXOT);
+			parts[i].tmp2 = rand()%1000;
+			index = sim->create_part(-3,x+((random>>4)&3)-1,y+((random>>6)&3)-1,PT_ELEC);
+			if (index != -1)
+				parts[index].temp = 7000;
+			index = sim->create_part(-3,x+((random>>8)&3)-1,y+((random>>10)&3)-1,PT_PHOT);
+			if (index != -1)
+				parts[index].temp = 7000;
+			index = sim->create_part(-1,x+((random>>12)&3)-1,y+rand()%3-1,PT_BREC);
+			if (index != -1)
+				parts[index].temp = 7000;
+			parts[i].temp=9000;
+			sim->pv[y/CELL][x/CELL] += 50;
+		}
 	}
 	//Neighbor check loop
-	for (rx=-3; rx<4; rx++)
-		for (ry=-3; ry<4; ry++)
+	for (rx=-2; rx<3; rx++)
+		for (ry=-2; ry<3; ry++)
 			if (x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES && (rx || ry))
 			{
 				r = pmap[y+ry][x+rx];
-				if (!r || (r & (abs(rx) == 3 || abs(ry) == 3)) )
+				if (!r)
 					r = sim->photons[y+ry][x+rx];
 				if (!r)
 					continue;
@@ -180,9 +183,10 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				{
 					sim->create_part(i, x, y, PT_EXOT);
 				}
-				else if ((r&0xFF) == PT_BOYL)
+				else if ((r&0xFF) == PT_ANAR)
 				{
 					sim->part_change_type(i,x,y,PT_BVBR);
+					sim->pv[y/CELL][x/CELL] -= 1;
 				}
 				else if (parts[i].life && (r&0xFF) == parts[i].type && !parts[r>>8].life)
 				{
@@ -191,11 +195,13 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				//Absorbs energy particles
 				if ((sim->elements[r&0xFF].Properties & TYPE_ENERGY))
 				{
-					parts[i].tmp += 10;
+					parts[i].tmp += 20;
 					sim->kill_part(r>>8);
 				}
 			}
 	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));
+	if (parts[i].tmp < 0)
+		parts[i].tmp = 0; // only preventing because negative tmp doesn't save
 	return 0;
 }
 
