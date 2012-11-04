@@ -129,7 +129,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 			if ((r&0xFF) && (r&0xFF) != PT_BREC && (sim->elements[r&0xFF].Properties&PROP_CONDUCTS) && !parts[r>>8].life)
 			{
 				parts[r>>8].life = 4;
-				parts[r>>8].ctype = r>>8;
+				parts[r>>8].ctype = r&0xFF;
 				sim->part_change_type(r>>8,x+rx,y+ry,PT_SPRK);
 			}
 		}
