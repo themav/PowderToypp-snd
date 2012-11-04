@@ -74,11 +74,11 @@ int Element_EXOT::update(UPDATE_FUNC_ARGS) {
 						sim->kill_part(i);
 						return 1;
 					}
-					else if (parts[r>>8].ctype == PT_VIBR && 1>rand()%1000)
+					/*else if (parts[r>>8].ctype == PT_VIBR && 1>rand()%1000)
 					{
 						sim->kill_part(i);
 						return 1;
-					}
+					}*/
 				}
 				if ((parts[i].tmp>245) && (parts[i].life>1000))
 					if ((r&0xFF)!=PT_EXOT && (r&0xFF)!=PT_BREC && (r&0xFF)!=PT_DMND && (r&0xFF)!=PT_CLNE && (r&0xFF)!=PT_PRTI && (r&0xFF)!=PT_PRTO && (r&0xFF)!=PT_PCLN && (r&0xFF)!=PT_PHOT && (r&0xFF)!=PT_VOID && (r&0xFF)!=PT_NBHL && (r&0xFF)!=PT_WARP && (r&0xFF)!=PT_NEUT)
