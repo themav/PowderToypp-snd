@@ -21,16 +21,18 @@
 #endif
 
 #ifndef MINOR_VERSION
-#define MINOR_VERSION 0
+#define MINOR_VERSION 1
 #endif
 
 #ifndef BUILD_NUM
-#define BUILD_NUM 246
+#define BUILD_NUM 247
 #endif
 
 #ifndef SNAPSHOT_ID
 #define SNAPSHOT_ID 0
 #endif
+
+//#define IGNORE_UPDATES //use to not get any update notifications, for mods
 
 #ifndef STABLE
 #ifndef BETA
