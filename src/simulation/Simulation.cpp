@@ -45,6 +45,29 @@ int Simulation::Load(int fullX, int fullY, GameSave * save)
 	fullX = blockX*CELL;
 	fullY = blockY*CELL;
 
+	int partMap[PT_NUM];
+	for(int i = 0; i < PT_NUM; i++)
+	{
+		partMap[i] = i;
+	}
+	if(save->palette.size())
+	{
+		for(std::vector<GameSave::PaletteItem>::iterator iter = save->palette.begin(), end = save->palette.end(); iter != end; ++iter)
+		{
+			GameSave::PaletteItem pi = *iter;
+			if(pi.second >= 0 && pi.second < PT_NUM)
+			{
+				int myId = 0;//pi.second;
+				for(int i = 0; i < PT_NUM; i++)
+				{
+					if(elements[i].Enabled && elements[i].Identifier == pi.first)
+						myId = i;
+				}
+				partMap[pi.second] = myId;
+			}
+		}
+	}
+
 	int i;
 	for(int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
@@ -53,6 +76,9 @@ int Simulation::Load(int fullX, int fullY, GameSave * save)
 		tempPart.y += (float)fullY;
 		x = int(tempPart.x + 0.5f);
 		y = int(tempPart.y + 0.5f);
+
+		if(tempPart.type >= 0 && tempPart.type < PT_NUM)
+			tempPart.type = partMap[tempPart.type];
 
 		if ((player.spwn == 1 && tempPart.type==PT_STKM) || (player2.spwn == 1 && tempPart.type==PT_STKM2))
 			continue;
@@ -182,6 +208,9 @@ GameSave * Simulation::Save(int fullX, int fullY, int fullX2, int fullY2)
 
 	GameSave * newSave = new GameSave(blockW, blockH);
 	
+	int storedParts = 0;
+	int elementCount[PT_NUM];
+	std::fill(elementCount, elementCount+PT_NUM, 0);
 	for(int i = 0; i < NPART; i++)
 	{
 		int x, y;
@@ -193,7 +222,22 @@ GameSave * Simulation::Save(int fullX, int fullY, int fullX2, int fullY2)
 			tempPart.x -= blockX*CELL;
 			tempPart.y -= blockY*CELL;
 			if(elements[tempPart.type].Enabled)
+			{
 				*newSave << tempPart;
+				storedParts++;
+				elementCount[tempPart.type]++;
+			}
+		}
+	}
+
+	if(storedParts)
+	{
+		for(int i = 0; i < PT_NUM; i++)
+		{
+			if(elements[i].Enabled && elementCount[i])
+			{
+				newSave->palette.push_back(GameSave::PaletteItem(elements[i].Identifier, i));
+			}
 		}
 	}
 	
@@ -1990,7 +2034,7 @@ void Simulation::init_can_move()
 		can_move[PT_STKM2][t] = stkm_move;
 		can_move[PT_FIGH][t] = stkm_move;
 	}
-	for (t=0;t<PT_NUM;t++)
+	for (t=1;t<PT_NUM;t++)
 	{
 		// make them eat things
 		can_move[t][PT_BHOL] = 1;
@@ -2005,6 +2049,13 @@ void Simulation::init_can_move()
 		//void behaviour varies with powered state and ctype
 		can_move[t][PT_PVOD] = 3;
 		can_move[t][PT_VOID] = 3;
+		can_move[t][PT_EMBR] = 0;
+		can_move[PT_EMBR][t] = 0;
+		if (elements[t].Properties&TYPE_ENERGY)
+		{
+			can_move[t][PT_VIBR] = 1;
+			can_move[t][PT_BVBR] = 1;
+		}
 	}
 	for (t=0;t<PT_NUM;t++)
 	{
@@ -2242,6 +2293,12 @@ int Simulation::try_move(int i, int x, int y, int nx, int ny)
 		if(parts[r>>8].life < 6000)
 			parts[r>>8].life += 1;
 		parts[r>>8].temp = 0;
+		kill_part(i);
+		return 0;
+	}
+	if (((r&0xFF)==PT_VIBR || (r&0xFF)==PT_BVBR) && (elements[parts[i].type].Properties & TYPE_ENERGY))
+	{
+		parts[r>>8].tmp += 20;
 		kill_part(i);
 		return 0;
 	}
@@ -3896,6 +3953,7 @@ void Simulation::update_particles_i(int start, int inc)
 						else if (t==PT_LAVA) {
 							if (parts[i].ctype>0 && parts[i].ctype<PT_NUM && parts[i].ctype!=PT_LAVA) {
 								if (parts[i].ctype==PT_THRM&&pt>=elements[PT_BMTL].HighTemperature) s = 0;
+								else if ((parts[i].ctype==PT_VIBR || parts[i].ctype==PT_BVBR) && pt>=273.15f) s = 0;
 								else if (elements[parts[i].ctype].HighTemperatureTransition==PT_LAVA) {
 									if (pt>=elements[parts[i].ctype].HighTemperature) s = 0;
 								}
@@ -4658,7 +4716,7 @@ void Simulation::update_particles()//doesn't update the particles themselves, bu
 					if (!pmap[y][x] || (t!=PT_INVIS && t!= PT_FILT))
 						pmap[y][x] = t|(i<<8);
 					// (there are a few exceptions, including energy particles - currently no limit on stacking those)
-					if (t!=PT_THDR && t!=PT_EMBR && t!=PT_FIGH)
+					if (t!=PT_THDR && t!=PT_EMBR && t!=PT_FIGH && t!=PT_PLSM)
 						pmap_count[y][x]++;
 				}
 			}

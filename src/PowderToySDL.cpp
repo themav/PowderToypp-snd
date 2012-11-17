@@ -229,10 +229,10 @@ std::map<std::string, std::string> readArguments(int argc, char * argv[])
 {
 	std::map<std::string, std::string> arguments;
 
-	//Defaults 
+	//Defaults
 	arguments["scale"] = "";
 	arguments["proxy"] = "";
-	arguments["nohud"] = "false";
+	arguments["nohud"] = "false"; //the nohud, sound, and scripts commands currently do nothing.
 	arguments["sound"] = "false";
 	arguments["kiosk"] = "false";
 	arguments["scripts"] = "false";
@@ -293,7 +293,7 @@ int elapsedTime = 0, currentTime = 0, lastTime = 0, currentFrame = 0;
 unsigned int lastTick = 0;
 float fps = 0, delta = 1.0f, inputScale = 1.0f;
 ui::Engine * engine = NULL;
-
+float currentWidth, currentHeight;
 void EngineProcess()
 {
 	int frameStart;
@@ -416,7 +416,9 @@ void EngineProcess()
 
 int main(int argc, char * argv[])
 {
-	float currentWidth = XRES+BARSIZE, currentHeight = YRES+MENUSIZE;
+	currentWidth = XRES+BARSIZE; 
+	currentHeight = YRES+MENUSIZE;
+
 
 	std::map<std::string, std::string> arguments = readArguments(argc, argv);
 

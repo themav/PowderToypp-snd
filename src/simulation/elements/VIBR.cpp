@@ -46,42 +46,10 @@ Element_VIBR::Element_VIBR()
 	Graphics = &Element_VIBR::graphics;
 }
 
-void transferProp(UPDATE_FUNC_ARGS, int propOffset)
-{
-	int r, rx, ry, trade, transfer;
-	for (trade = 0; trade < 9; trade++)
-	{
-		int random = rand();
-		rx = random%7-3;
-		ry = (random>>3)%7-3;
-		if (x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES && (rx || ry))
-		{
-			r = pmap[y+ry][x+rx];
-			if ((r&0xFF) != parts[i].type)
-				continue;
-			if (*((int*)(((char*)&parts[i])+propOffset)) > *((int*)(((char*)&parts[r>>8])+propOffset)))
-			{
-				transfer = *((int*)(((char*)&parts[i])+propOffset)) - *((int*)(((char*)&parts[r>>8])+propOffset));
-				if (transfer == 1)
-				{
-					*((int*)(((char*)&parts[r>>8])+propOffset)) += 1;
-					*((int*)(((char*)&parts[i])+propOffset)) -= 1;
-					trade = 9;
-				}
-				else if (transfer > 0)
-				{
-					*((int*)(((char*)&parts[r>>8])+propOffset)) += transfer/2;
-					*((int*)(((char*)&parts[i])+propOffset)) -= transfer/2;
-					trade = 9;
-				}
-			}
-		}
-	}	
-}
-
 //#TPT-Directive ElementHeader Element_VIBR static int update(UPDATE_FUNC_ARGS)
 int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 	int r, rx, ry;
+	int trade, transfer;
 	if (parts[i].ctype == 1) //leaving in, just because
 	{
 		if (sim->pv[y/CELL][x/CELL] > -2.5 || parts[i].tmp)
@@ -142,7 +110,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 			if(x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES)
 			{
 				r = pmap[y+ry][x+rx];
-				if ((r&0xFF) && (r&0xFF) != parts[i].type)
+				if ((r&0xFF) && (r&0xFF)!=PT_VIBR  && (r&0xFF)!=PT_BVBR && sim->elements[r&0xFF].HeatConduct && ((r&0xFF)!=PT_HSWC||parts[r>>8].life==10))
 				{
 					parts[r>>8].temp += parts[i].tmp*3;
 					parts[i].tmp = 0;
@@ -166,6 +134,8 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 				parts[index].temp = 7000;
 			parts[i].temp=9000;
 			sim->pv[y/CELL][x/CELL] += 50;
+
+			return 1;
 		}
 	}
 	//Neighbor check loop
@@ -188,7 +158,7 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 					sim->part_change_type(i,x,y,PT_BVBR);
 					sim->pv[y/CELL][x/CELL] -= 1;
 				}
-				else if (parts[i].life && (r&0xFF) == parts[i].type && !parts[r>>8].life)
+				else if (parts[i].life && ((r&0xFF)==PT_VIBR  || (r&0xFF)==PT_BVBR) && !parts[r>>8].life)
 				{
 					parts[r>>8].tmp += 10;
 				}
@@ -199,7 +169,34 @@ int Element_VIBR::update(UPDATE_FUNC_ARGS) {
 					sim->kill_part(r>>8);
 				}
 			}
-	transferProp(UPDATE_FUNC_SUBCALL_ARGS, offsetof(Particle, tmp));
+	for (trade = 0; trade < 9; trade++)
+	{
+		int random = rand();
+		rx = random%7-3;
+		ry = (random>>3)%7-3;
+		if (x+rx>=0 && y+ry>0 && x+rx<XRES && y+ry<YRES && (rx || ry))
+		{
+			r = pmap[y+ry][x+rx];
+			if ((r&0xFF) != PT_VIBR && (r&0xFF) != PT_BVBR)
+				continue;
+			if (parts[i].tmp > parts[r>>8].tmp)
+			{
+				transfer = parts[i].tmp - parts[r>>8].tmp;
+				if (transfer == 1)
+				{
+					parts[r>>8].tmp += 1;
+					parts[i].tmp -= 1;
+					trade = 9;
+				}
+				else if (transfer > 0)
+				{
+					parts[r>>8].tmp += transfer/2;
+					parts[i].tmp -= transfer/2;
+					trade = 9;
+				}
+			}
+		}
+	}
 	if (parts[i].tmp < 0)
 		parts[i].tmp = 0; // only preventing because negative tmp doesn't save
 	return 0;
