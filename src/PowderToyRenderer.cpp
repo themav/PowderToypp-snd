@@ -17,11 +17,9 @@
 #include "simulation/Simulation.h"
 
 
-<<<<<<< HEAD
-=======
+
 void EngineProcess() {}
 
->>>>>>> powdertoypp/master
 void readFile(std::string filename, std::vector<char> & storage)
 {
 	std::ifstream fileStream;
