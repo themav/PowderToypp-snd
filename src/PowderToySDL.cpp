@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "inc/fmod.h"
 #include "Config.h"
 #include "graphics/Graphics.h"
 #if defined(LIN)
@@ -418,7 +419,7 @@ int main(int argc, char * argv[])
 {
 	currentWidth = XRES+BARSIZE; 
 	currentHeight = YRES+MENUSIZE;
-
+	 FSOUND_Init (44100, 32, 0);
 
 	std::map<std::string, std::string> arguments = readArguments(argc, argv);
 

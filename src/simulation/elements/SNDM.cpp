@@ -11,7 +11,7 @@ Element_SNDM::Element_SNDM()
     MenuVisible = 1;
     MenuSection = SC_ELEC;
     Enabled = 1;
-    
+    handle=FSOUND_Sample_Load (0,"my.mp3",0, 0, 0);
     Advection = 0.0f;
     AirDrag = 0.00f * CFDS;
     AirLoss = 0.90f;
@@ -39,7 +39,7 @@ Element_SNDM::Element_SNDM()
     LowPressure = IPL;
     LowPressureTransition = NT;
     HighPressure = 15.0f;
-    HighPressureTransition = PT_BRMT;
+    HighPressureTransition = PT_METL;
     LowTemperature = ITL;
     LowTemperatureTransition = NT;
     HighTemperature = ITH;
@@ -52,7 +52,8 @@ Element_SNDM::Element_SNDM()
 //#TPT-Directive ElementHeader Element_WIFI static int update(UPDATE_FUNC_ARGS)
 int Element_SNDM::update(UPDATE_FUNC_ARGS)
  {
-	int r, rx, ry;
+	// Removing WIFI code broke element
+		int r, rx, ry;
 	parts[i].tmp = (int)((parts[i].temp-73.15f)/100+1);
 	if (parts[i].tmp>=CHANNELS) parts[i].tmp = CHANNELS-1;
 	else if (parts[i].tmp<0) parts[i].tmp = 0;
@@ -67,28 +68,23 @@ int Element_SNDM::update(UPDATE_FUNC_ARGS)
 				// wireless[][1] - whether channel should be active on next frame
 				if (sim->wireless[parts[i].tmp][0])
 				{
-					if (((r&0xFF)==PT_NSCN||(r&0xFF)==PT_PSCN||(r&0xFF)==PT_INWR)&&parts[r>>8].life==0 && sim->wireless[parts[i].tmp][0])
+					if ((r&0xFF)==PT_SPRK && parts[r>>8].ctype==PT_NSCN)
 					{
-						//HI
+						FSOUND_Sample_Free(handle);
+						FSOUND_Close();
 					}
 				}
 				else
 				{
-					if ((r&0xFF)==PT_SPRK && parts[r>>8].ctype!=PT_NSCN && parts[r>>8].life>=3)
+					if ((r&0xFF)==PT_SPRK && parts[r>>8].ctype!=PT_NSCN && parts[r>>8].life==1)
 					{
-						  // init FMOD sound system
-							FSOUND_Init(44100, 32, 0);
-
-							// load and play mp3
-							handle=FSOUND_Sample_Load(0,"my.mp3",0, 0, 0);
-							FSOUND_PlaySound(0,handle);
-							 // wait until the users hits a key to end the app
-   
-						// clean up
+						 
+   FSOUND_PlaySound (0,handle);
 					}
 				}
 			}
 	return 0;
+  
 }
 
 
